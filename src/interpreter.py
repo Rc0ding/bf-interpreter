@@ -12,6 +12,7 @@ class Interpreter:
 		self.dataPointer: int= 0
 		self.instructionPointer: int = 0
 		self.loop_value: int = 0
+		self.jump = self.build_bracket_map(self.code)  
 		self.run()
 	
 
@@ -49,9 +50,9 @@ class Interpreter:
 
 	
 	def run(self)-> None: # []
-		
-		while self.instructionPointer < len(self.code):
-			cmd = self.code[self.instructionPointer]
+		ip = self.instructionPointer
+		while ip < len(self.code):
+			cmd = self.code[ip]
 
 			if cmd == '>':
 				self.right()
@@ -66,29 +67,40 @@ class Interpreter:
 			elif cmd == ',':
 				self.inp()
 			elif cmd == '[':
+
 				if self.tape[self.dataPointer] == 0:
-					self.loop_value = 1
-				while self.loop_value > 0:
-					self.instructionPointer += 1
-					if self.code[self.instructionPointer] == '[':
-						self.loop_value += 1
-					elif self.code[self.instructionPointer] == ']':
-						self.loop_value -= 1
+					ip = self.jump[ip]  
 
 			elif cmd == ']':
-				close_brackets=0
-				if self.tape[self.dataPointer] != 0:
-				# jump back to after matching [
-					close_brackets = 1
-				while close_brackets > 0:
-					self.instructionPointer -= 1
-					if self.code[self.instructionPointer] == ']':
-						close_brackets += 1
-					elif self.code[self.instructionPointer] == '[':
-						close_brackets -= 1
-			# move to next instruction
-			self.instructionPointer += 1
 		
+				if self.tape[self.dataPointer] != 0:
+					ip = self.jump[ip]  
+
+		
+			ip += 1
+
+			self.instructionPointer = ip  
+		
+	
+
+
+	def build_bracket_map(self, code: list[Any]) -> dict[int, int]:
+		stack: list[int] = []
+		jump: dict[int, int] = {}
+		for i, c in enumerate(code):
+			if c == '[':
+				stack.append(i)
+			elif c == ']':
+				if not stack:
+					raise SyntaxError(f"Unmatched ']' at position {i}")
+				j = stack.pop()
+				jump[i] = j
+				jump[j] = i
+		if stack:
+
+			raise SyntaxError(f"Unmatched '[' at position {stack[-1]}")
+		return jump
+	
 	def scrape(self,code: str) -> list[Any]:
 		return re.findall(r"[+\-<>.,\[\]]", code)
 	
