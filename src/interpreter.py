@@ -1,90 +1,82 @@
 import re, sys
 from typing import Any
 
-
-
 class Interpreter:
-
 	def __init__(self) -> None:
-		self.code= self.command()
-		print("test")
-		self.tape: list[int]= 30000*[0]
-		self.dataPointer: int= 0
+		self.code = self.command()           
+		self.jump = self.build_bracket_map(self.code)
+		self.tape: list[int] = [0] * 30000
+		self.dataPointer: int = 0
 		self.instructionPointer: int = 0
-		self.loop_value: int = 0
-		self.jump = self.build_bracket_map(self.code)  
 		self.run()
-	
 
 
-	def right(self) -> int:  # >
-		self.dataPointer += 1
-		if self.dataPointer >= len(self.tape):
-			self.tape.append(0)  # grow tape to the right if needed
-		return 0
-
-	def left(self) -> int:  # <
-		if self.dataPointer == 0:
-			raise IndexError("Data pointer moved left of cell 0")
-		self.dataPointer -= 1
-		return 0
-	
-	def output(self)->str: # .
-		return chr(self.tape[self.dataPointer]%256)
-
-
-	def add(self)->int: # +
-		self.tape[self.dataPointer]=(self.tape[self.dataPointer]+1)%256
-		return 0
-	
-	def sub(self)->int: # -
-		self.tape[self.dataPointer]=(self.tape[self.dataPointer]-1)%256
-		return 0
-	
-	
-	def inp(self) -> int:  # ,
-		s = input()
-		ch = s[0] if s else "\n"           # tolerate empty line
-		self.tape[self.dataPointer] = ord(ch) & 0xFF
-		return 0
-
-	
-	def run(self)-> None: # []
+	def run(self) -> None:
+		code = self.code
+		jump = self.jump
+		tape = self.tape
+		dp = self.dataPointer
 		ip = self.instructionPointer
-		while ip < len(self.code):
-			cmd = self.code[ip]
+		n = len(code)
 
-			if cmd == '>':
-				self.right()
-			elif cmd == '<':
-				self.left()
-			elif cmd == '+':
-				self.add()
-			elif cmd == '-':
-				self.sub()
-			elif cmd == '.':
-				print(self.output(),end="")
-			elif cmd == ',':
-				self.inp()
-			elif cmd == '[':
+		read_byte = sys.stdin.buffer.read 
+		out_chunks:list[Any] = []
+		CHUNK = 4096
+		write = sys.stdout.write
 
-				if self.tape[self.dataPointer] == 0:
-					ip = self.jump[ip]  
+		while ip < n:
+			c = code[ip]
 
-			elif cmd == ']':
-		
-				if self.tape[self.dataPointer] != 0:
-					ip = self.jump[ip]  
+			if c == '>':
+				dp += 1
+				if dp >= len(tape):
+					tape.append(0)
 
-		
+			elif c == '<':
+				if dp == 0:
+					raise IndexError("Data pointer moved left of cell 0")
+				dp -= 1
+
+			elif c == '+':
+				tape[dp] = (tape[dp] + 1) & 0xFF
+
+			elif c == '-':
+				tape[dp] = (tape[dp] - 1) & 0xFF
+
+			elif c == '.':
+				out_chunks.append(chr(tape[dp]))
+				if len(out_chunks) >= CHUNK:
+					write(''.join(out_chunks))
+					out_chunks.clear()
+
+			elif c == ',':
+				b = read_byte(1)
+				if not b:         
+					tape[dp] = 0
+				else:
+					tape[dp] = b[0]
+
+			elif c == '[':
+				if tape[dp] == 0:
+					ip = jump[ip]  
+
+			elif c == ']':
+				if tape[dp] != 0:
+					ip = jump[ip]  
+
 			ip += 1
 
-			self.instructionPointer = ip  
-		
-	
+		# flush any buffered output once
+		if out_chunks:
+			write(''.join(out_chunks))
+
+		# sync back
+		self.dataPointer = dp
+		self.instructionPointer = ip
+		self.tape = tape
 
 
-	def build_bracket_map(self, code: list[Any]) -> dict[int, int]:
+	def build_bracket_map(self, code: str) -> dict[int, int]:
 		stack: list[int] = []
 		jump: dict[int, int] = {}
 		for i, c in enumerate(code):
@@ -97,26 +89,18 @@ class Interpreter:
 				jump[i] = j
 				jump[j] = i
 		if stack:
-
 			raise SyntaxError(f"Unmatched '[' at position {stack[-1]}")
 		return jump
-	
-	def scrape(self,code: str) -> list[Any]:
-		return re.findall(r"[+\-<>.,\[\]]", code)
-	
 
+	def scrape(self, code: str) -> str:
 
-	def command(self)-> list[Any]:
+		return ''.join(re.findall(r"[+\-<>.,\[\]]", code))
+
+	def command(self) -> str:
 		if len(sys.argv) < 2:
 			print("Usage: python MyFile.py <file.bf>")
 			sys.exit(1)
-
 		filename = sys.argv[1]
-
 		with open(filename, "r", encoding="utf-8") as f:
 			source_code = f.read()
-
-		instructions= self.scrape(source_code)
-		return instructions
-		
-
+		return self.scrape(source_code)
