@@ -21,7 +21,7 @@ class Interpreter:
 
 		read_byte = sys.stdin.buffer.read 
 		out_chunks:list[Any] = []
-		CHUNK = 4096
+		CHUNK = 128
 		write = sys.stdout.write
 
 		while ip < n:
