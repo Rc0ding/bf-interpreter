@@ -1,4 +1,4 @@
-from src.interpreter import Interpreter
+from bf.interpreter import Interpreter
 
 def main():
 	interpreter=Interpreter()
