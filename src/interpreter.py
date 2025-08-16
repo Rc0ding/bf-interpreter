@@ -4,16 +4,28 @@ from typing import Any
 
 
 class Interpreter:
+
 	def __init__(self) -> None:
+		self.code= self.command()
+		print("test")
 		self.tape: list[int]= 30000*[0]
-		self.dataPointer: int=0
-		
-	def right(self)->int: # >
-		self.dataPointer+=1
-		return 0
+		self.dataPointer: int= 0
+		self.instructionPointer: int = 0
+		self.loop_value: int = 0
+		self.run()
 	
-	def left(self)->int: # <
-		self.dataPointer-=1
+
+
+	def right(self) -> int:  # >
+		self.dataPointer += 1
+		if self.dataPointer >= len(self.tape):
+			self.tape.append(0)  # grow tape to the right if needed
+		return 0
+
+	def left(self) -> int:  # <
+		if self.dataPointer == 0:
+			raise IndexError("Data pointer moved left of cell 0")
+		self.dataPointer -= 1
 		return 0
 	
 	def output(self)->str: # .
@@ -25,25 +37,64 @@ class Interpreter:
 		return 0
 	
 	def sub(self)->int: # -
-		self.tape[self.dataPointer] = max(self.tape[self.dataPointer]-1,0)
+		self.tape[self.dataPointer]=(self.tape[self.dataPointer]-1)%256
 		return 0
 	
-	def inp(self)->int: # ,
-		value=ord(input())
-		if value>256:
-			raise ValueError("This char is not in the 256 first ascii char")
-		self.tape[self.dataPointer]=value
+	
+	def inp(self) -> int:  # ,
+		s = input()
+		ch = s[0] if s else "\n"           # tolerate empty line
+		self.tape[self.dataPointer] = ord(ch) & 0xFF
 		return 0
 
 	
+	def run(self)-> None: # []
+		
+		while self.instructionPointer < len(self.code):
+			cmd = self.code[self.instructionPointer]
 
+			if cmd == '>':
+				self.right()
+			elif cmd == '<':
+				self.left()
+			elif cmd == '+':
+				self.add()
+			elif cmd == '-':
+				self.sub()
+			elif cmd == '.':
+				print(self.output(),end="")
+			elif cmd == ',':
+				self.inp()
+			elif cmd == '[':
+				if self.tape[self.dataPointer] == 0:
+					self.loop_value = 1
+				while self.loop_value > 0:
+					self.instructionPointer += 1
+					if self.code[self.instructionPointer] == '[':
+						self.loop_value += 1
+					elif self.code[self.instructionPointer] == ']':
+						self.loop_value -= 1
 
+			elif cmd == ']':
+				close_brackets=0
+				if self.tape[self.dataPointer] != 0:
+				# jump back to after matching [
+					close_brackets = 1
+				while close_brackets > 0:
+					self.instructionPointer -= 1
+					if self.code[self.instructionPointer] == ']':
+						close_brackets += 1
+					elif self.code[self.instructionPointer] == '[':
+						close_brackets -= 1
+			# move to next instruction
+			self.instructionPointer += 1
+		
 	def scrape(self,code: str) -> list[Any]:
 		return re.findall(r"[+\-<>.,\[\]]", code)
 	
 
 
-	def command(self)-> None:
+	def command(self)-> list[Any]:
 		if len(sys.argv) < 2:
 			print("Usage: python MyFile.py <file.bf>")
 			sys.exit(1)
@@ -54,7 +105,6 @@ class Interpreter:
 			source_code = f.read()
 
 		instructions= self.scrape(source_code)
-		print(instructions)
-
+		return instructions
 		
 

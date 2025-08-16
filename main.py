@@ -1,8 +1,7 @@
 from src.interpreter import Interpreter
 
 def main():
-	interpret= Interpreter()
-	interpret.command()
+	interpreter=Interpreter()
 
 
 if __name__ == "__main__":
