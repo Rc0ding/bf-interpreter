@@ -1,8 +1,3 @@
-Of course 🙂 here’s a clean **README.md** draft for your Brainfuck interpreter project. It explains what it does, how to install, and how to run programs with it.
-
----
-
-```markdown
 # 🧠 Brainfuck Interpreter (Python)
 
 A simple but efficient [Brainfuck](https://en.wikipedia.org/wiki/Brainfuck) interpreter written in Python.  
@@ -25,12 +20,12 @@ Supports 8-bit cells, dynamic tape growth, and precomputed loop jumps for better
 
 bf-interpreter/
 │── bf/
-│       ├── **__init__**.py
-│       ├── **__main__**.py      # CLI entry point
+│       ├── __init__.py
+│       ├── __main__.py      # CLI entry point
 │       └── interpreter.py   # Interpreter class
 ├── pyproject.toml
 ├── README.md
-└── test.bf                  # Example Brainfuck program
+└── hello.bf                  # Example Brainfuck program
 
 ````
 
@@ -42,10 +37,10 @@ bf-interpreter/
 From the project root:
 
 ```bash
-python -m bf test.bf
+python -m bf hello.bf
 ````
 
-Where `test.bf` is any Brainfuck source file.
+Where `hello.bf` is any Brainfuck source file.
 
 ### Example: Hello World
 
@@ -75,7 +70,7 @@ Hello World!
 * Run tests/examples with:
 
   ```bash
-  python -m bf test.bf
+  python -m bf hello.bf
   ```
 
 ---
@@ -84,3 +79,4 @@ Hello World!
 
 This project is open-source.
 ---
+
